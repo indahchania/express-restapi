@@ -3,6 +3,8 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var bodyParser = require('body-parser')
+//Tambahkan modul jsonwebtoken
+const jwt = require("jsonwebtoken");
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -80,6 +82,56 @@ app.delete('/api/kelas/:id', function(req,res) {
         res.send({pesan: "Data berhasil dihapus", data: klas})
 })
 
+//auth jwt
+app.post('/api/login', (req, res) => {
+    const user = {
+        id:Date.now(),
+        userEmail:'admin@gamelab.id',
+        password:'gamelab'
+    }
+    //untuk generate token user
+    jwt.sign({ user },'secretkey',(err,token)=>{
+        res.json({
+            token
+        })
+    })
+})
+
+
+
+app.get('/api/profile', verifyToken,(req,res)=>{
+    jwt.verify(req.token,'secretkey',(err,authData)=>{
+        if(err)
+            res.sendStatus(403)
+        else{
+            res.json({
+                message:"Selamat Datang di Gamelab Indonesia",
+                userData:authData
+            })
+        }
+    })
+})
+
+//Verifikasi Token
+function verifyToken(req, res, next) {
+    const bearerHeader = req.headers["authorization"];
+    //cek jika bearer kosong/tidak ada
+    if (typeof bearerHeader !== "undefined") {
+      const bearer = bearerHeader.split(" ");
+      //Get token
+      const bearerToken = bearer[1];
+  
+      //set the token
+      req.token = bearerToken;
+  
+      //next middleware
+      next();
+    } else {
+      //Jika tidak bisa akses mengarahkan ke halaman forbidden
+      res.sendStatus(403);
+    }
+}
+  
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 
